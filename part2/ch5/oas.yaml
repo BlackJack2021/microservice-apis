@@ -66,8 +66,106 @@ paths:
         "422":
           $ref: "#/components/responses/UnprocessableEntity"
 
+  /orders/{order_id}:
+    parameters:
+      - in: path
+        name: order_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      summary: Returns the details of a specific order
+      operationId: getOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    put:
+      summary: Replaces an existing order
+      operationId: updateOrder
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateOrderSchema"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+    delete:
+      summary: Deletes an existing order
+      operationId: deleteOrder
+      responses:
+        "204":
+          description: The resource was deleted successfully
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /orders/{order_id}/pay:
+    parameters:
+      - in: path
+        name: order_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Processes payment for an order
+      operationId: payOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
   /orders/{order_id}/cancel:
-    # ここから書く
+    parameters:
+      - in: path
+        name: order_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+    post:
+      summary: Cancels an order
+      operationId: cancelOrder
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
 
 components:
   responses:
@@ -83,6 +181,22 @@ components:
         application/json:
           schema:
             $ref: "#/components/schemas/Error"
+
+  securitySchemes:
+    openId:
+      type: openIdConnect
+      openIdConnectUrl: https://coffeemesh-dev.eu.auth0.com/.well-known/openid-configuration
+    oauth2:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://coffeemesh-dev.eu.auth0.com/oauth/token
+          scopes: {}
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     Error:
       type: object
@@ -150,3 +264,21 @@ components:
                 - cancelled
                 - dispatched
                 - delivered
+
+security:
+  - oauth2:
+      - getOrders
+      - createOrder
+      - getOrder
+      - updateOrder
+      - deleteOrder
+      - payOrder
+      - cancelOrder
+  - bearerAuth:
+      - getOrders
+      - createOrder
+      - getOrder
+      - updateOrder
+      - deleteOrder
+      - payOrder
+      - cancelOrder
