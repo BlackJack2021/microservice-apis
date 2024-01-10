@@ -29,10 +29,16 @@ class OrderItemSchema(BaseModel):
     def quantity_non_nullable(cls, value):
         assert value is not None, 'quantity may not be None'
         return value
+    
+    class Config:
+        extra = 'forbid'
         
 
 class CreateOrderSchema(BaseModel):
     order: conlist(OrderItemSchema, min_length=1)
+    
+    class Config:
+        extra = 'forbid'
 
 class GetOrderSchema(CreateOrderSchema):
     id: UUID

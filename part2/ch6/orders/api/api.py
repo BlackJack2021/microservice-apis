@@ -9,7 +9,7 @@ from starlette import status
 from http import HTTPStatus
 
 from app import app
-from orders.api.schemas import (
+from api.schemas import (
     GetOrderSchema,
     CreateOrderSchema,
     GetOrdersSchema
