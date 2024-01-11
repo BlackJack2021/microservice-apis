@@ -1,9 +1,11 @@
+import copy
 import uuid
 from datetime import datetime
 from typing import Dict, Any
 
 from flask.views import MethodView
 from flask_smorest import Blueprint
+from marshmallow import ValidationError
 
 # marshmallow モデルをインポート
 from .schemas import (
@@ -49,6 +51,16 @@ class KitchenSchedules(MethodView):
         schema=GetScheduledOrdersSchema
     )    
     def get(self, parameters: Dict[str, Any]):
+        
+        # まず初めに、データベースから取得されることが想定される schedules について
+        # 正しいデータが含まれることを検証する
+        for schedule in schedules:
+            schedule = copy.deepcopy(schedule)
+            schedule['scheduled'] = schedule['scheduled'].isoformat()
+            errors = GetScheduledOrderSchema().validate(schedule)
+            if errors:
+                raise ValidationError(errors)
+        
         # パラメータが特に指定されていない場合はスケジュールのリストを返す
         if not parameters:
             return {'schedules': schedules}
