@@ -1,11 +1,12 @@
 import copy
 import uuid
 from datetime import datetime
-from typing import Dict, Any
+from typing import Dict, Any, List
 
 from flask.views import MethodView
 from flask_smorest import Blueprint
 from marshmallow import ValidationError
+from flask import abort
 
 # marshmallow モデルをインポート
 from .schemas import (
@@ -16,23 +17,27 @@ from .schemas import (
     GetKitchenScheduleParameters
 )
 
+# 型ヒントをインポート
+from .type import (
+    EachOrder,
+    Schedule,
+    ScheduleOrder
+)
+
 blueprint = Blueprint('kitchen', __name__, description='Kitchen API')
 
-# ハードコーディングされたスケジュールのリストを宣言
-schedules = [
-    {
-        'id': str(uuid.uuid4()),
-        'scheduled': datetime.now(),
-        'status': 'pending',
-        'order': [
-            {
-                'product': 'cappuccino',
-                'quantity': 1,
-                'size': 'big'
-            }
-        ]
-    }
-]
+# インメモリでスケジュールを定義
+schedules: List[Schedule] = []
+
+# データ検証コードを関数として切り出し
+def validate_schedule(schedule: Schedule):
+    # schedule に変更を加えても、直ちに破壊的変更にならないことを保証
+    _schedule = copy.deepcopy(schedule)
+    _schedule['scheduled'] = schedule['scheduled'].isoformat()
+    errors = GetScheduledOrderSchema().validate(_schedule)
+    if errors:
+        ValidationError(errors)
+    
 
 # Blueprint の route() デコレータを使って、クラスまたは関数をURLパスとして登録
 @blueprint.route('/kitchen/schedules')
@@ -55,11 +60,7 @@ class KitchenSchedules(MethodView):
         # まず初めに、データベースから取得されることが想定される schedules について
         # 正しいデータが含まれることを検証する
         for schedule in schedules:
-            schedule = copy.deepcopy(schedule)
-            schedule['scheduled'] = schedule['scheduled'].isoformat()
-            errors = GetScheduledOrderSchema().validate(schedule)
-            if errors:
-                raise ValidationError(errors)
+            validate_schedule(schedule)
         
         # パラメータが特に指定されていない場合はスケジュールのリストを返す
         if not parameters:
@@ -105,8 +106,15 @@ class KitchenSchedules(MethodView):
         status_code=201,
         schema=GetScheduledOrderSchema
     )
-    def post(self, payload):
-        return schedules[0]
+    def post(self, payload: ScheduleOrder):
+        '''IDなどのサーバー側のスケジュールの属性を設定'''
+        
+        payload['id'] = str(uuid.uuid4())
+        payload['scheduled'] = datetime.utcnow()
+        payload['status'] = 'pending'
+        validate_schedule(payload)
+        schedules.append(payload)
+        return payload
     
 # URL パラメータは <> で囲んで定義
 @blueprint.route('/kitchen/schedules/<schedule_id>')
@@ -116,20 +124,42 @@ class KitchenSchedule(MethodView):
         status_code=200,
         schema=GetScheduledOrderSchema
     )
-    def get(self, schedule_id):
-        return schedules[0]
+    def get(self, schedule_id: str):
+        for schedule in schedules:
+            if schedule['id'] == schedule_id:
+                validate_schedule(schedule)
+                return schedule
+        abort(
+            404,
+            description=f'Resource with ID {schedule_id} not found'
+        )
     
     @blueprint.arguments(ScheduleOrderSchema)
     @blueprint.response(
         status_code=200,
         schema=GetScheduledOrderSchema
     )
-    def post(self, payload, schedule_id):
-        return schedules[0], 200
+    def put(self, payload: ScheduleOrder, schedule_id: str):
+        for schedule in schedules:
+            if schedule['id'] == schedule_id:
+                schedule.update(payload)
+                validate_schedule(schedule)
+                return schedule
+        abort(
+            404,
+            description=f"Resource with ID {schedule_id} not found"
+        )
 
     @blueprint.response(status_code=204)
-    def delete(self, schedule_id):
-        return
+    def delete(self, schedule_id: str):
+        for index, schedule in enumerate(schedules):
+            if schedule['id'] == schedule_id:
+                schedules.pop(index)
+                return
+        abort(
+            404,
+            description=f'Resource with ID {schedule_id} not found'
+        )
     
 # URL パス　/kitchen/schedules/<schedule_id>/cancel を関数ベースのビューとして実装
 @blueprint.response(
@@ -137,13 +167,28 @@ class KitchenSchedule(MethodView):
     schema=GetScheduledOrderSchema
 )
 @blueprint.route('/kitchen/schedules/<schedule_id>/cancel', methods=['POST'])
-def cancel_schedule(schedule_id):
-    return schedules[0]
+def cancel_schedule(schedule_id: str):
+    for schedule in schedules:
+        if schedule['id'] == schedule_id:
+            schedule['status'] = 'cancelled'
+            validate_schedule(schedule)
+            return schedule
+    abort(
+        404,
+        description=f'Resource with ID {schedule_id} not found'
+    )
 
 @blueprint.response(
     status_code=200,
     schema=ScheduleStatusSchema
 )
 @blueprint.route('/kitchen/schedules/<schedule_id>/status', methods=['GET'])
-def get_schedule_status(schedule_id):
-    return schedules[0]
+def get_schedule_status(schedule_id: str):
+    for schedule in schedules:
+        if schedule['id'] == schedule_id:
+            validate_schedule(schedule)
+            return {'status': schedule['status']}
+    abort(
+        404,
+        description=f'Resource with ID {schedule_id} not found.'
+    )
