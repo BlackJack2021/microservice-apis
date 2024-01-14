@@ -12,6 +12,8 @@ fastapi = "^0.108.0"
 uvicorn = "^0.25.0"
 pyyaml = "^6.0.1"
 flask-smorest = "^0.42.3"
+sqlalchemy = "^2.0.25"
+alembic = "^1.13.1"
 
 
 [build-system]
