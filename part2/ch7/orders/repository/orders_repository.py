@@ -2,10 +2,11 @@ from sqlalchemy.orm import Session
 
 from typing import Optional
 
-from orders.orders_service.orders import Order
+from orders.domain.order import Order
 from orders.repository.models import OrderModel, OrderItemModel
+from orders.repository.interface import OrderRepositoryInterface
 
-class OrderRepository:
+class OrdersRepository(OrderRepositoryInterface):
     
     def __init__(self, session: Session):
         self.session = session
