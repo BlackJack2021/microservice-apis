@@ -17,14 +17,107 @@ paths:
   /kitchen/schedules:
     get:
       summary: Returns a list of orders sheduled for production
+      tags:
+        - kitchen
+      parameters:
+        - name: progress
+          in: query
+          description: Whether the order is in progress or not. In progress means it's in production in the kitchen.
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+        - name: since
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+      responses:
+        "200":
+          description: A list of scheduled orders
+          content:
+            application/json:
+              schema:
+                additionalProperties: false
+                type: object
+                properties:
+                  schedules:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/GetScheduledOrderSchema"
     post:
       summary: Schedules an order for production
+      tags:
+        - kitchen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleOrderSchema"
+      responses:
+        "201":
+          description: A JSON representation of the scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GetScheduledOrderSchema"
 
   /kitchen/schedules/{schedule_id}:
+    parameters:
+      - in: path
+        name: schedule_id
+        required: true
+        schema:
+          type: string
+          format: uuid
+
     get:
       summary: Returns the status and details of a scheduled order
+      tags:
+        - kitchen
+      responses:
+        "200":
+          description: A JSON representation of a scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
     put:
       summary: Updates an existing scheduled order
+      tags:
+        - kitchen
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleOrderSchema"
+      responses:
+        "200":
+          description: A JSON representation of a scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleOrderSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    delete:
+      summary: Deletes an existing order
+      tags:
+        - kitchen
+      responses:
+        "204":
+          description: The resource was deleted successfully
 
   /kitchen/schedules/{schedule_id}/status:
     parameters:
@@ -36,6 +129,17 @@ paths:
           format: uuid
     get:
       summary: Returns the status of a scheduled order
+      tags:
+        - kitchen
+      responses:
+        "200":
+          description: A JSON representation of a scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleStatusSchema"
+        "404":
+          $ref: "#/components/responses/NotFound"
 
   /kitchen/schedules/{schedule_id}/cancel:
     parameters:
@@ -47,6 +151,15 @@ paths:
           format: uuid
     post:
       summary: Cancels a scheduled order
+      tags:
+        - kitchen
+      responses:
+        "200":
+          description: A JSON representation of a scheduled order
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScheduleOrderSchema"
 
 components:
   responses:
