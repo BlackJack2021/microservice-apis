@@ -23,7 +23,6 @@ paths:
               type: object
               required:
                 - order_id
-                - status
               properties:
                 order_id:
                   type: string
