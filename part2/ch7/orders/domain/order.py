@@ -3,6 +3,14 @@
 現時点ではまだ仮実装
 '''
 
+import requests
+from orders.orders_service.exceptions import (
+    APIIntegrationError,
+    InvalidActionError
+)
+
+from config.env_config import EnvConfig
+
 class OrderItem:
     '''注文の各アイテムを表すビジネスオブジェクト'''
     def __init__(self, id, product, quantity, size):
@@ -10,6 +18,13 @@ class OrderItem:
         self.product = product
         self.quantity = quantity
         self.size = size
+        
+    def dict(self):
+        return {
+            'product': self.product,
+            'size': self.size,
+            'quantity': self.quantity
+        }
         
 class Order:
     def __init__(
@@ -57,3 +72,58 @@ class Order:
     @property
     def status(self):
         return self._status or self._order.status
+    
+    def cancel(self):
+        '''注文のキャンセルを実施
+        
+        status が progress ならキャンセルを実施、
+        delivery であればキャンセルせず、エラーを出力
+        '''
+        kitchen_base_url = EnvConfig().kitchen_base_url
+        if self.status == 'progress':
+            response = requests.post(
+                f"{kitchen_base_url}/schedules/{self.schedule_id}/cancel",
+                json={"order": [item.dict() for item in self.items]}
+            )
+            
+            if response.status_code == 200:
+                return
+            
+            raise APIIntegrationError(
+                f'Could not cancel order with id {self.id}'
+            )
+        
+        # 配達中の注文のキャンセルは許可しない
+        if self.status == 'delivery':
+            raise InvalidActionError(
+                f'Could not process payment for order with id {self.id}'
+            )
+        
+    def pay(self):
+        '''支払いサービスを利用して支払いを実行'''
+        payments_base_url = EnvConfig().payments_base_url
+        response = requests.post(
+            payments_base_url,
+            json={'order_id': self.id}
+        )
+        if response.status_code == 201:
+            return
+        raise APIIntegrationError(
+            f'Could not process payment for order with id {self.id}'
+        )
+        
+    def schedule(self):
+        '''厨房サービスに注文内容をスケジューリング'''
+        kitchen_base_url = EnvConfig().kitchen_base_url
+        items = [item.dict() for item in self.items]
+        response = requests.post(
+            f'{kitchen_base_url}/schedules',
+            json = {'order': items}
+        )
+        # 厨房サービスから成功のレスポンスを受け取った場合は、schedule_id を返却
+        if response.status_code == 201:
+            return response.json()['id']
+        raise APIIntegrationError(
+            f'Could not schedule order with id {self.id}'
+        )
+    
