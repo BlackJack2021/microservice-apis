@@ -2,6 +2,9 @@
 from abc import ABC, abstractmethod
 from repository.interface import OrderRepositoryInterface
 
+from orders.types import Item, OrderId
+from typing import List
+
 class OrdersServiceInterface(ABC):
     '''注文サービスクラスが持つべき特徴を示したインターフェイスです
     
@@ -13,17 +16,17 @@ class OrdersServiceInterface(ABC):
         self.orders_repository = orders_repository
     
     @abstractmethod    
-    def place_order(self, items):
+    def place_order(self, items: List[Item]):
         '''注文を作成'''
         pass
 
     @abstractmethod
-    def get_order(self, order_id):
+    def get_order(self, order_id: OrderId):
         '''指定された order_id の注文の詳細を取得'''
         pass
 
     @abstractmethod
-    def update_order(self, order_id, items):
+    def update_order(self, order_id: OrderId, items: List[Item]):
         '''指定された order_id の注文データを更新'''
         pass
 
@@ -33,11 +36,11 @@ class OrdersServiceInterface(ABC):
         pass
 
     @abstractmethod
-    def pay_order(self, order_id):
+    def pay_order(self, order_id: OrderId):
         '''指定された order_id の注文の支払いを実行'''
         pass
 
     @abstractmethod
-    def cancel_order(self, order_id):
+    def cancel_order(self, order_id: OrderId):
         pass
     

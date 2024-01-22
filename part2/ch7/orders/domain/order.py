@@ -8,6 +8,7 @@ from orders.orders_service.exceptions import (
     APIIntegrationError,
     InvalidActionError
 )
+from orders.types import ScheduleId
 
 from config.env_config import EnvConfig
 
@@ -112,7 +113,7 @@ class Order:
             f'Could not process payment for order with id {self.id}'
         )
         
-    def schedule(self):
+    def schedule(self) -> ScheduleId:
         '''厨房サービスに注文内容をスケジューリング'''
         kitchen_base_url = EnvConfig().kitchen_base_url
         items = [item.dict() for item in self.items]

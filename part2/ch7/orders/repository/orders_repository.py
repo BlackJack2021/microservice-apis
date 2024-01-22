@@ -6,12 +6,15 @@ from orders.domain.order import Order
 from orders.repository.models import OrderModel, OrderItemModel
 from orders.repository.interface import OrderRepositoryInterface
 
+from orders.types import Item, OrderId
+from typing import List
+
 class OrdersRepository(OrderRepositoryInterface):
     
     def __init__(self, session: Session):
         self.session = session
     
-    def add(self, items):
+    def add(self, items: List[Item]):
         '''データベースに、複数のアイテムを保存する'''
         # 注文のレコードを作成する際、注文内のアイテムごとにレコードを作成
         record = OrderModel(
@@ -22,7 +25,7 @@ class OrdersRepository(OrderRepositoryInterface):
         # Order クラスのインスタンスを返す
         return Order(**record.dict(), order_=record)
     
-    def _get(self, id_) -> OrderModel | None:
+    def _get(self, id_: OrderId) -> OrderModel | None:
         '''特定の注文データを取得
         
         SQLAlchemy の first メソッドを利用し、データオブジェクトとして出力
@@ -34,7 +37,7 @@ class OrdersRepository(OrderRepositoryInterface):
                 .first()
         )
         
-    def get(self, id_) -> Order | None:
+    def get(self, id_: OrderId) -> Order | None:
         '''特定の注文データを Order オブジェクトの形で出力
         
         Order はビジネスロジックで用いるオブジェクト
@@ -65,7 +68,7 @@ class OrdersRepository(OrderRepositoryInterface):
         # ビジネスロジックに利用する Order オブジェクト のリストを返却
         return [Order(**record.dict()) for record in records]
     
-    def update(self, id_, **payload):
+    def update(self, id_: OrderId, **payload):
         '''与えられた payload の情報を元に注文データを更新'''
         record = self._get(id_)
 
@@ -86,7 +89,7 @@ class OrdersRepository(OrderRepositoryInterface):
             setattr(record, key, value)
         return Order(**record.dict())
             
-    def delete(self, id_):
+    def delete(self, id_: OrderId):
         '''指定された注文データを削除'''
         self.session.delete(self._get(id_))
         
