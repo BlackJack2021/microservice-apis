@@ -10,7 +10,9 @@
 2. **テストの容易性**: 依存関係を外部から注入することにより、モックやスタブを使用して依存関係を容易に置き換えることができ、ユニットテストが容易になります。
 3. **コードの明瞭さ**: 依存関係が外部から注入されるため、コードの意図がより明確になり、読みやすくなります。
 
-## FastAPI における DI の例
+## DI の例
+
+### FastAPI における一般的な例
 
 ```python
 from fastapi import FastAPI, Depends
@@ -29,6 +31,27 @@ def read_items(db = Depends(get_db)):
 ```
 
 - この例では、`Depends(get_db)` を使用して `get_db` 関数からデータベースセッションを依存性として注入しています。FastAPI がリクエストごとに適切なタイミングで `get_db` を呼び出し、DB セッションを `read_items` 関数に提供します。
+
+### `orders_service.py` における例
+
+以下の実装は良くない例。何故なら、注文リポジトリのインポートとインスタンス化を注文サービスが引き受けてしまっており、責任が重たい。
+
+```py
+from repository.orders_repository import OrdersRepository
+class OrdersService:
+    def __init__(self):
+        self.repository = OrdersRepository()
+```
+
+こうではなく、注文リポジトリのインスタンス化と設定を正しく行う責任を呼び出し元にゆだねられる
+以下のアプローチの方が、適切な依存性の注入を行えている。
+
+```py
+from repository.interface import OrderRepositoryInterface
+class OrdersService:
+    def __init__(self, orders_repository: OrderRepositoryInterface):
+        self.orders_repository = orders_repository
+```
 
 ## まとめ
 
