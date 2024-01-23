@@ -128,3 +128,11 @@ class Order:
             f'Could not schedule order with id {self.id}'
         )
     
+    def dict(self):
+        return {
+            'id': self.id,
+            'items': [item.dict() for item in self.items],
+            'status': self.status,
+            'created': self.created,
+        }
+    
