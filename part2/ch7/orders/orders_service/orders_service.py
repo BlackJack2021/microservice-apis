@@ -3,16 +3,17 @@ from exceptions import OrderNotFoundError
 
 from typing import List
 from orders.types import Item, OrderId
+from orders.domain.order import Order
 
 class OrdersService:
     def __init__(self, orders_repository: OrderRepositoryInterface):
         self.orders_repository = orders_repository
     
-    def place_order(self, items: List[Item]):
+    def place_order(self, items: List[Item]) -> Order:
         '''データベースレコードを作成して注文を実行'''
         return self.orders_repository.add(items)
     
-    def get_order(self, order_id: OrderId):
+    def get_order(self, order_id: OrderId) -> Order:
         '''注文リポジトリにリクエストされたIDを渡して注文の詳細を取得'''
         order = self.orders_repository.get(order_id)
         if order is not None:
@@ -21,7 +22,7 @@ class OrdersService:
             f'Order with id {order_id} not found'
         )
         
-    def update_order(self, order_id: OrderId, items: List[Item]):
+    def update_order(self, order_id: OrderId, items: List[Item]) -> Order:
         '''指定されたIDの注文を更新'''
         order = self.orders_repository.get(order_id)
         if order is None:
@@ -33,13 +34,13 @@ class OrdersService:
             {'items': items}
         )
     
-    def list_orders(self, **filters):
+    def list_orders(self, **filters) -> List[Order]:
         '''注文をリスト化して受け取り'''
         limit = filters.pop('limit', None)
         return self.orders_repository.list(limit, **filters)
         
     
-    def pay_order(self, order_id: OrderId):
+    def pay_order(self, order_id: OrderId) -> Order:
         '''指定されたIDの注文に対する支払い'''
         order = self.orders_repository.get(order_id)
         if order is None:
@@ -55,7 +56,7 @@ class OrdersService:
             schedule_id=schedule_id
         )
 
-    def cancel_order(self, order_id: OrderId):
+    def cancel_order(self, order_id: OrderId) -> Order:
         order = self.orders_repository.get(order_id)
         if order is None:
             raise OrderNotFoundError(
