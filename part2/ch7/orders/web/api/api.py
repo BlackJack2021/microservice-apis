@@ -45,8 +45,10 @@ def create_order(payload: CreateOrderSchema):
             # これを再度文字列の 'small' に戻すには以下の操作が必要。
             item['size'] = item['size'].value
         order = orders_service.place_order(items)
+        # dict の中でデータベースセッションの中を参照するものが存在するので、sessionの中で実施
+        order_dict = order.dict()
         unit_of_work.commit()
-    return order.dict()
+    return order_dict
         
 @app.get('/orders/{order_id}', response_model=GetOrderSchema)
 def get_order(order_id: OrderId):
